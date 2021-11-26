@@ -1,13 +1,14 @@
 #include "networkfs.h"
+#include "utils.h"
 
 struct file_system_type networkfs_fs_type = { .name = "networkfs",
 					      .mount = networkfs_mount,
 					      .kill_sb = networkfs_kill_sb };
 
-
 int networkfs_init(void)
 {
-	int err = register_filesystem(&networkfs_fs_type);
+	int err;
+	err = register_filesystem(&networkfs_fs_type);
 	if (err) {
 		printk(KERN_ERR "Error registering networkfs: register_filesystem returned code %d\n", err);
 
@@ -19,7 +20,8 @@ int networkfs_init(void)
 
 void networkfs_exit(void)
 {
-	int err = unregister_filesystem(&networkfs_fs_type);
+	int err;
+	err = unregister_filesystem(&networkfs_fs_type);
 	if (err) {
 		printk(KERN_ERR "Error unregistering networkfs: unregister_filesystem returned code %d\n", err);
 
@@ -60,7 +62,7 @@ int networkfs_fill_super(struct super_block *sb, void *data, int silent)
 	return 0;
 }
 
-struct inode *networkfs_get_inode(struct super_block *sb, const struct inode *dir, umode_t mode, int i_ino) /
+struct inode *networkfs_get_inode(struct super_block *sb, const struct inode *dir, umode_t mode, int i_ino)
 {
 	// fixme
 	struct inode *inode;

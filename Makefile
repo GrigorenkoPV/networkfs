@@ -1,29 +1,41 @@
-obj-m += networkfs.o
 module_name = networkfs
-mount_path = mnt
 
-.PHONY: all clean module_install module_remove dmesg install remove mount umount
+# Thanks, https://github.com/RedPill-TTG/redpill-lkm
+SRCS += src/networkfs.c src/utils.c
+EXTRA_CFLAGS += -I$(src)/include
+OBJS += $(SRCS:.c=.o)
 
+obj-m += $(module_name).o
+$(module_name)-objs := $(OBJS)
+
+
+.PHONY: clean token.txt install uninstall mount umount
 all:
 	make -C /lib/modules/$(shell uname -r)/build M=$(shell pwd) modules
 clean:
-	-rmdir mnt
 	make -C /lib/modules/$(shell uname -r)/build M=$(shell pwd) clean
 
-module_install: all
+
+install: all
 	sudo insmod $(module_name).ko
-module_remove:
+	sudo dmesg -c
+remove:
 	sudo rmmod $(module_name)
-dmesg:
 	sudo dmesg -c
 
-install: module_install dmesg
-remove: module_remove dmesg
+
+mount_path = mnt
+token_file = token.txt
 
 mount:
-	-mkdir "$(mount_path)" 2> /dev/null
-	sudo mount --type networkfs "$(shell cat token.txt)" "$(mount_path)"
-
+	if [ ! -f "$(token_file)" ]; \
+	then curl https://nerc.itmo.ru/teaching/os/networkfs/v1/token/issue | \
+	 tr -d '\000' > "$(token_file)"; \
+	fi
+	mkdir -p "$(mount_path)"
+	sudo mount --type networkfs "$(shell cat $(token_file))" "$(mount_path)"
+	sudo dmesg -c
 umount:
 	sudo umount "$(mount_path)"
 	-rmdir "$(mount_path)"
+	sudo dmesg -c

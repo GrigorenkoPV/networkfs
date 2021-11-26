@@ -3,6 +3,7 @@
 *.order
 *.ko
 *.o
+*.d
 *.mod.*
 *.mod
 token.txt

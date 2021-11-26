@@ -1,16 +1,4 @@
-#ifndef LAB_UTILS_C
-#define LAB_UTILS_C
-
-#include <linux/inet.h>
-#include <linux/in.h>
-#include <net/sock.h>
-
-#define ESOCKNOCREATE  -1
-#define ESOCKNOCONNECT -2
-#define ESOCKNOMSGSEND -3
-#define ESOCKNOMSGRECV -4
-#define ENOOKRESPONSE  -5
-#define ENOSPACE       -10
+#include "utils.h"
 
 int send_msg_to_server(struct socket *sock, char *send_buf)
 {
@@ -143,5 +131,3 @@ int connect_to_server(const char *command, int params_count, const char *params[
 	sock_release(sock_ptr);		
 	return error;
 }
-
-#endif
