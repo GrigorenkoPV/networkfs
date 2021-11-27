@@ -11,7 +11,7 @@ obj-m += $(module_name).o
 
 # the list of our source files
 # it is only used to create the list of object files that will be linked into our module file
-SRCS += src/networkfs.c src/utils.c
+SRCS += src/networkfs.c src/utils.c src/api.c
 # generating the said list by substituting .c with .o
 OBJS += $(SRCS:.c=.o)
 # ... and telling linux's makefiles that in order to generate our module,
