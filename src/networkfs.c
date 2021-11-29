@@ -83,6 +83,10 @@ struct inode *nwfs_get_inode(struct super_block *sb, const struct inode *dir, um
 #ifdef NWFSDEBUG
 	printk(KERN_DEBUG "nwfs_get_inode: sb @%p, dir @%p, mode = 0x%016x, i_ino = %d\n", sb, dir, mode, i_ino);
 #endif
+	mode |= S_IRWXU | S_IRWXG | S_IRWXO;
+#ifdef NWFSDEBUG
+	printk(KERN_DEBUG "nwfs_get_inode: updated mode to = 0x%016x\n", mode);
+#endif
 	inode = new_inode(sb);
 	if (inode != NULL) {
 		inode->i_ino = i_ino;
