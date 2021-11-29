@@ -37,6 +37,9 @@ INCLUDE_DIRS += include
 # Linux's makefiles seem to nicely resolve $(src) to dirname of this makefile
 EXTRA_CFLAGS += $(addprefix -I$(src)/,$(INCLUDE_DIRS))
 
+# For debug logging
+EXTRA_CFLAGS += -DNWFSDEBUG
+
 
 .PHONY: all clean install uninstall mount umount
 

@@ -1,6 +1,5 @@
 #include "networkfs.h"
 #include "utils.h"
-#include "api_types.h"
 #include "api.h"
 
 struct file_system_type networkfs_fs_type = { .name = "networkfs",
@@ -15,7 +14,9 @@ int networkfs_init(void)
 		printk(KERN_ERR "Error registering networkfs: register_filesystem returned code %d\n", err);
 
 	} else {
+#ifdef NWFSDEBUG
 		printk(KERN_DEBUG "Successfully registered networkfs\n");
+#endif
 	}
 	return err;
 }
@@ -28,7 +29,9 @@ void networkfs_exit(void)
 		printk(KERN_ERR "Error unregistering networkfs: unregister_filesystem returned code %d\n", err);
 
 	} else {
+#ifdef NWFSDEBUG
 		printk(KERN_DEBUG "Successfully unregistered networkfs\n");
+#endif
 	}
 }
 
@@ -36,12 +39,16 @@ struct dentry *networkfs_mount(struct file_system_type *fs_type, int flags, cons
 {
 	// fixme
 	struct dentry *ret;
+#ifdef NWFSDEBUG
 	printk(KERN_DEBUG "NETWORK_FS_MOUNT: flags: %x, token: %s, data: %s\n", flags, token, (char const *)data);
+#endif
 	ret = mount_nodev(fs_type, flags, data, networkfs_fill_super);
 	if (ret == NULL) {
 		printk(KERN_ERR "Can't mount file system\n");
 	} else {
+#ifdef NWFSDEBUG
 		printk(KERN_DEBUG "Mounted successfuly\n");
+#endif
 	}
 	return ret;
 }

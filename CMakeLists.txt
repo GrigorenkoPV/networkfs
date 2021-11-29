@@ -18,4 +18,6 @@ include_directories(/usr/src/linux-headers-5.4.0-90-generic/include)
 # if you're running other distro, you know your packet manager better than I do
 # if you're running Windows, I'm sorry
 
+SET(CMAKE_C_FLAGS "-DNWFSDEBUG")
+
 add_executable(networkfs src/networkfs.c src/utils.c src/api.c)
