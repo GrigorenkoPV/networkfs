@@ -5,6 +5,7 @@ make install DEBUG=YES				&& \
 echo ================ MOUNT ==================	&& \
 make mount					&& \
 echo ================ STUFF ==================	&& \
+make stuff
 echo ================ UMOUNT =================	&& \
 make umount					&& \
 echo ================ REMOVE =================	&& \

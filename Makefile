@@ -47,15 +47,15 @@ all:
 clean:
 	make -C "$(KDIR)" M=$(PWD) clean
 
-.PHONY: all clean install remove mount umount
+.PHONY: all clean install remove mount umount stuff
 
 # loads/unloads the module and prints dmesg's messages
 install: all
 	sudo insmod $(module_name).ko
-	sudo dmesg -c
+	@sudo dmesg -c
 remove:
 	sudo rmmod $(module_name)
-	sudo dmesg -c
+	@sudo dmesg -c
 
 
 # mounts/unmounts a test directory, feel free to change variables below
@@ -71,8 +71,14 @@ mount:
 	fi
 	mkdir -p "$(mount_path)"
 	sudo mount --type networkfs "$(shell cat $(token_file))" "$(mount_path)"
-	sudo dmesg -c
+	@sudo dmesg -c
 umount:
 	sudo umount "$(mount_path)"
-	-rmdir "$(mount_path)"
-	sudo dmesg -c
+	@sudo dmesg -c
+
+stuff:
+	ls -l "$$(dirname "$(mount_path)")"
+	@sudo dmesg -c
+	-ls -l "$(mount_path)"
+	@sudo dmesg -c
+
