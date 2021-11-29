@@ -43,6 +43,10 @@ int recv_msg_from_server(struct socket *sock, char *recv_buf, int recv_buf_size)
 		if (ret == 0)
 		{
 			break;
+		} 
+		else if (ret < 0)
+		{
+			return ESOCKNOMSGRECV;
 		}
 		memcpy(recv_buf + sum, connect_to_server_output_buf, ret);
 		sum += ret;
@@ -112,7 +116,7 @@ int connect_to_server(const char *command, int params_count, const char *params[
 		strcat(send_buf, params[i]);
 		i++;
 	}
-	strcat(send_buf, " HTTP/1.1\nHost: nerc.itmo.ru\n\n");
+	strcat(send_buf, " HTTP/1.1\r\nHost: nerc.itmo.ru\r\nConnection: close\r\n\r\n");
 	error = send_msg_to_server(sock_ptr, send_buf);
 	if (error < 0)
 	{
