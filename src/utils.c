@@ -33,6 +33,8 @@ int nwfs_recv_msg_from_server(struct socket *sock, char *recv_buf, int recv_buf_
 		ret = kernel_recvmsg(sock, &recv_msg, &recv_vec, 1, connect_to_server_output_buf_size, 0);
 		if (ret == 0) {
 			break;
+		} else if (ret < 0) {
+			return NWFS_ERR_SOCK_RECV;
 		}
 		memcpy(recv_buf + sum, connect_to_server_output_buf, ret);
 		sum += ret;
@@ -113,7 +115,7 @@ u64 nwfs_connect_to_server(const char *command, int params_count, url_key_value_
 		}
 		i++;
 	}
-	strcat(send_buf, " HTTP/1.1\nHost: nerc.itmo.ru\n\n");
+	strcat(send_buf, " HTTP/1.1\r\nHost: nerc.itmo.ru\r\nConnection: close\r\n\r\n");
 #ifdef NWFSDEBUG
 	printk(KERN_DEBUG "Sending message: %s\n", send_buf);
 #endif
