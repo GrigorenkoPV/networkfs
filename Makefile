@@ -38,16 +38,16 @@ INCLUDE_DIRS += include
 EXTRA_CFLAGS += $(addprefix -I$(src)/,$(INCLUDE_DIRS))
 
 # For debug logging
+ifdef DEBUG
 EXTRA_CFLAGS += -DNWFSDEBUG
-
-
-.PHONY: all clean install uninstall mount umount
+endif
 
 all:
 	make -C "$(KDIR)" M=$(PWD) modules
 clean:
 	make -C "$(KDIR)" M=$(PWD) clean
 
+.PHONY: all clean install remove mount umount
 
 # loads/unloads the module and prints dmesg's messages
 install: all

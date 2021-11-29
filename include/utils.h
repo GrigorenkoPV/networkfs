@@ -12,4 +12,4 @@ int nwfs_connect_to_server_atoi(const char *c);
 
 typedef char const *url_key_value_pair[2];
 u64 nwfs_connect_to_server(const char *command, int params_count, url_key_value_pair params[], const char *token,
-		      char *output_buf);
+			   char *output_buf);
