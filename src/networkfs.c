@@ -170,5 +170,8 @@ int nwfs_iterate(struct file *filp, struct dir_context *ctx)
 		}
 		ctx->pos++;
 	}
+	if (contents != NULL) {
+		kfree(contents);
+	}
 	return contents->entries_count + 2;
 }
