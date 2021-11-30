@@ -76,7 +76,13 @@ u64 nwfs_connect_to_server(const char *command, int params_count, url_key_value_
 	if (command == NULL || token == NULL) {
 		return NWFS_ERR_BAD_ARGUMENT;
 	}
-
+#ifdef NWFSDEBUG
+	printk(KERN_DEBUG "nwfs_connect_to_server: command = %s, token = %s, output_buffer @0x%p, params_count = %d",
+	       command, token, output_buf, params_count);
+	for (i = 0; i < params_count; ++i) {
+		printk(KERN_DEBUG "nwfs_connect_to_server: param %i: %s = %s", i, params[i][0], params[i][1]);
+	}
+#endif
 	send_buf = connect_to_server_send_buf;
 	recv_buf = connect_to_server_recv_buf;
 	memset(&s_addr, 0, sizeof(s_addr));
@@ -117,7 +123,7 @@ u64 nwfs_connect_to_server(const char *command, int params_count, url_key_value_
 	}
 	strcat(send_buf, " HTTP/1.1\r\nHost: nerc.itmo.ru\r\nConnection: close\r\n\r\n");
 #ifdef NWFSDEBUG
-	printk(KERN_DEBUG "Sending message: %s\n", send_buf);
+	printk(KERN_DEBUG "Sending message @0x%p: %s\n", send_buf, send_buf);
 #endif
 	error = nwfs_send_msg_to_server(sock_ptr, send_buf);
 	if (error < 0) {
@@ -134,11 +140,12 @@ u64 nwfs_connect_to_server(const char *command, int params_count, url_key_value_
 		return NWFS_ERR_SOCK_RECV;
 	}
 #ifdef NWFSDEBUG
-	printk(KERN_DEBUG "Received message: %s\n", recv_buf);
+	printk(KERN_DEBUG "Received message @0x%p: %s\n", recv_buf, recv_buf);
 #endif
 	if (strncmp(recv_buf, "HTTP/1.1 200 ", strlen("HTTP/1.1 200 ")) != 0) {
 		return NWFS_ERR_SOCK_NOK_HTTP;
 	}
+	// fixme
 	recv_buf = strchr(recv_buf, '\n') + 1;
 	recv_buf = strchr(recv_buf, '\n') + 1;
 	recv_buf = strchr(recv_buf, '\n') + 1;
@@ -154,6 +161,9 @@ u64 nwfs_connect_to_server(const char *command, int params_count, url_key_value_
 	if ((message_len == 0) != (output_buf == NULL)) {
 		return NWFS_ERR_BAD_ARGUMENT;
 	}
+#ifdef NWFSDEBUG
+	printk(KERN_DEBUG "message_len = %d, recv_buf @0x%p\n", message_len, recv_buf);
+#endif
 	if (message_len != 0) {
 		memcpy(output_buf, recv_buf, message_len);
 	}

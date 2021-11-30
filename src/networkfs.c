@@ -4,6 +4,10 @@
 
 struct file_system_type nwfs_fs_type = { .name = "networkfs", .mount = nwfs_mount, .kill_sb = nwfs_kill_sb };
 struct inode_operations nwfs_inode_ops = { .lookup = nwfs_lookup };
+struct file_operations nwfs_dir_ops = { .iterate = nwfs_iterate };
+
+// fixme
+static char token_buffer[1024];
 
 int nwfs_init(void)
 {
@@ -48,6 +52,7 @@ struct dentry *nwfs_mount(struct file_system_type *fs_type, int flags, const cha
 #ifdef NWFSDEBUG
 		printk(KERN_DEBUG "nwfs_mount: success!\n");
 #endif
+		strcpy(token_buffer, token);
 	}
 	return ret;
 }
@@ -91,6 +96,7 @@ struct inode *nwfs_get_inode(struct super_block *sb, const struct inode *dir, um
 	if (inode != NULL) {
 		inode->i_ino = i_ino;
 		inode->i_op = &nwfs_inode_ops;
+		inode->i_fop = &nwfs_dir_ops;
 		inode_init_owner(inode, dir, mode);
 	}
 	return inode;
@@ -103,4 +109,65 @@ struct dentry *nwfs_lookup(struct inode *parent_inode, struct dentry *child_dent
 	       flag);
 #endif
 	return NULL; // todo
+}
+
+int nwfs_iterate(struct file *filp, struct dir_context *ctx)
+{
+	struct nwfs_entries contents;
+	struct dentry *dentry;
+	struct inode *inode;
+	int stored;
+	unsigned char ftype;
+	ino_t ino;
+	ino_t dino;
+	u64 err;
+	size_t e_no;
+
+#ifdef NWFSDEBUG
+	printk(KERN_DEBUG "nwfs_iterate: filp @%p, ctx @%p\n", filp, ctx);
+#endif
+	dentry = filp->f_path.dentry;
+	inode = dentry->d_inode;
+	ctx->pos = filp->f_pos;
+	stored = 0;
+	ino = inode->i_ino;
+#ifdef NWFSDEBUG
+	printk(KERN_DEBUG "nwfs_iterate: getting contents for inode = %lu, token = %s\n", ino, token_buffer);
+#endif
+	err = nwfs_api_list(token_buffer, ino, &contents);
+#ifdef NWFSDEBUG
+	printk(KERN_DEBUG "nwfs_iterate: got return code = %llu\n", err);
+	if (err == 0) {
+		printk(KERN_DEBUG "newfs_iterate: got %ld entries\n", contents.entries_count);
+		for (e_no = 0; e_no < contents.entries_count; e_no++) {
+			printk(KERN_DEBUG "nwfs_iterate: entry #%ld: type = 0x%x, inode = %lu, name = %s\n", e_no,
+			       contents.entries[e_no].entry_type, contents.entries[e_no].ino,
+			       contents.entries[e_no].name);
+		}
+	}
+#endif
+	// todo
+	//	while (true) {
+	//		if (ino == 1000) {
+	//			if (ctx->pos == 0) {
+	//				strcpy(fsname, ".");
+	//				ftype = DT_DIR;
+	//				dino = ino;
+	//			} else if (ctx->pos == 1) {
+	//				strcpy(fsname, "..");
+	//				ftype = DT_DIR;
+	//				dino = dentry->d_parent->d_inode->i_ino;
+	//			} else if (ctx->pos == 2) {
+	//				strcpy(fsname, "test.txt");
+	//				ftype = DT_REG;
+	//				dino = 101;
+	//			} else {
+	//				return stored;
+	//			}
+	//		}
+	//		dir_emit(ctx, fsname, strlen(fsname), dino, ftype);
+	//		stored++;
+	//		ctx->pos++;
+	//	}
+	return stored;
 }

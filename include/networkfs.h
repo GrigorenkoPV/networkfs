@@ -18,7 +18,8 @@ void nwfs_kill_sb(struct super_block *sb);
 int nwfs_fill_super(struct super_block *sb, void *data, int silent);
 struct inode *nwfs_get_inode(struct super_block *sb, const struct inode *dir, umode_t mode, int i_ino);
 
-struct dentry* nwfs_lookup(struct inode *parent_inode, struct dentry *child_dentry, unsigned int flag);
+struct dentry *nwfs_lookup(struct inode *parent_inode, struct dentry *child_dentry, unsigned int flag);
+int nwfs_iterate(struct file *filp, struct dir_context *ctx);
 
 module_init(nwfs_init);
 module_exit(nwfs_exit);
