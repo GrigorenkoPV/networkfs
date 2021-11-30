@@ -19,7 +19,7 @@ u64 nwfs_api_list(char const *token, ino_t inode, struct nwfs_entries *result)
 	params[0][0] = "inode";
 	params[0][1] = inode_s;
 
-	return nwfs_connect_to_server("list", 1, params, token, (char *)(void *)&result);
+	return nwfs_connect_to_server("list", 1, params, token, (char *)(void *)result);
 }
 
 u64 nwfs_api_create(char const *token, ino_t parent, char const *name, enum networkfs_inode_kind type, ino_t *result)
@@ -53,7 +53,7 @@ u64 nwfs_api_create(char const *token, ino_t parent, char const *name, enum netw
 		return NWFS_ERR_BAD_ARGUMENT;
 	}
 
-	return nwfs_connect_to_server("create", 3, params, token, (char *)(void *)&result);
+	return nwfs_connect_to_server("create", 3, params, token, (char *)(void *)result);
 }
 
 u64 nwfs_api_read(char const *token, ino_t inode, struct nwfs_content *result)
@@ -72,7 +72,7 @@ u64 nwfs_api_read(char const *token, ino_t inode, struct nwfs_content *result)
 	params[0][0] = "inode";
 	params[0][1] = inode_s;
 
-	return nwfs_connect_to_server("create", 1, params, token, (char *)(void *)&result);
+	return nwfs_connect_to_server("create", 1, params, token, (char *)(void *)result);
 }
 
 u64 nwfs_api_write(char const *token, ino_t inode, char const *content)
@@ -187,5 +187,5 @@ u64 nwfs_api_lookup(char const *token, ino_t parent, char const *name, struct nw
 	params[1][0] = "name";
 	params[1][1] = name;
 
-	return nwfs_connect_to_server("lookup", 2, params, token, (char *)(void *)&result);
+	return nwfs_connect_to_server("lookup", 2, params, token, (char *)(void *)result);
 }

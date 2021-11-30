@@ -1,6 +1,7 @@
 #include "networkfs.h"
 #include "utils.h"
 #include "api.h"
+#include <linux/memory.h>
 
 struct file_system_type nwfs_fs_type = { .name = "networkfs", .mount = nwfs_mount, .kill_sb = nwfs_kill_sb };
 struct inode_operations nwfs_inode_ops = { .lookup = nwfs_lookup };
@@ -113,61 +114,61 @@ struct dentry *nwfs_lookup(struct inode *parent_inode, struct dentry *child_dent
 
 int nwfs_iterate(struct file *filp, struct dir_context *ctx)
 {
-	struct nwfs_entries contents;
+	struct nwfs_entries *contents;
+	struct nwfs_entry *entry;
 	struct dentry *dentry;
 	struct inode *inode;
-	int stored;
-	unsigned char ftype;
-	ino_t ino;
-	ino_t dino;
 	u64 err;
 	size_t e_no;
-
-#ifdef NWFSDEBUG
-	printk(KERN_DEBUG "nwfs_iterate: filp @%p, ctx @%p\n", filp, ctx);
-#endif
+	contents = NULL;
 	dentry = filp->f_path.dentry;
 	inode = dentry->d_inode;
+
+#ifdef NWFSDEBUG
+	printk(KERN_DEBUG "nwfs_iterate: filp @%p, ctx @%p, ctx->pos = %lu, filp->f_pos = %lu\n", filp, ctx, ctx->pos,
+	       filp->f_pos);
+#endif
 	ctx->pos = filp->f_pos;
-	stored = 0;
-	ino = inode->i_ino;
+	while (true) {
+		if (ctx->pos == 0) {
+			dir_emit(ctx, ".", strlen("."), inode->i_ino, DT_DIR);
+		} else if (ctx->pos == 1) {
+			dir_emit(ctx, "..", strlen(".."), dentry->d_parent->d_inode->i_ino, DT_DIR);
+		} else {
+			if (contents == NULL) {
 #ifdef NWFSDEBUG
-	printk(KERN_DEBUG "nwfs_iterate: getting contents for inode = %lu, token = %s\n", ino, token_buffer);
+				printk(KERN_DEBUG "nwfs_iterate: getting contents for inode = %lu, token = %s\n",
+				       inode->i_ino, token_buffer);
 #endif
-	err = nwfs_api_list(token_buffer, ino, &contents);
+				contents = kmalloc(sizeof(struct nwfs_entries), GFP_KERNEL);
 #ifdef NWFSDEBUG
-	printk(KERN_DEBUG "nwfs_iterate: got return code = %llu\n", err);
-	if (err == 0) {
-		printk(KERN_DEBUG "newfs_iterate: got %ld entries\n", contents.entries_count);
-		for (e_no = 0; e_no < contents.entries_count; e_no++) {
-			printk(KERN_DEBUG "nwfs_iterate: entry #%ld: type = 0x%x, inode = %lu, name = %s\n", e_no,
-			       contents.entries[e_no].entry_type, contents.entries[e_no].ino,
-			       contents.entries[e_no].name);
+				printk(KERN_DEBUG "nwfs_iterate: alloced @0x%p\n", contents);
+#endif
+				err = nwfs_api_list(token_buffer, inode->i_ino, contents);
+#ifdef NWFSDEBUG
+				printk(KERN_DEBUG "nwfs_iterate: got return code = %llu\n", err);
+				if (err == NWFS_OK) {
+					printk(KERN_DEBUG "newfs_iterate: got %ld entries\n", contents->entries_count);
+					for (e_no = 0; e_no < contents->entries_count; e_no++) {
+						printk(KERN_DEBUG
+						       "nwfs_iterate: entry #%ld: type = 0x%x, inode = %lu, name = %s\n",
+						       e_no, contents->entries[e_no].entry_type,
+						       contents->entries[e_no].ino, contents->entries[e_no].name);
+					}
+				}
+#endif
+				if (err != NWFS_OK) {
+					break;
+				}
+			}
+			if (ctx->pos - 2 >= contents->entries_count) {
+				break;
+			} else {
+				entry = &(contents->entries[ctx->pos - 2]);
+				dir_emit(ctx, entry->name, strlen(entry->name), entry->ino, entry->entry_type);
+			}
 		}
+		ctx->pos++;
 	}
-#endif
-	// todo
-	//	while (true) {
-	//		if (ino == 1000) {
-	//			if (ctx->pos == 0) {
-	//				strcpy(fsname, ".");
-	//				ftype = DT_DIR;
-	//				dino = ino;
-	//			} else if (ctx->pos == 1) {
-	//				strcpy(fsname, "..");
-	//				ftype = DT_DIR;
-	//				dino = dentry->d_parent->d_inode->i_ino;
-	//			} else if (ctx->pos == 2) {
-	//				strcpy(fsname, "test.txt");
-	//				ftype = DT_REG;
-	//				dino = 101;
-	//			} else {
-	//				return stored;
-	//			}
-	//		}
-	//		dir_emit(ctx, fsname, strlen(fsname), dino, ftype);
-	//		stored++;
-	//		ctx->pos++;
-	//	}
-	return stored;
+	return contents->entries_count + 2;
 }

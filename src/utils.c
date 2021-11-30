@@ -145,24 +145,20 @@ u64 nwfs_connect_to_server(const char *command, int params_count, url_key_value_
 	if (strncmp(recv_buf, "HTTP/1.1 200 ", strlen("HTTP/1.1 200 ")) != 0) {
 		return NWFS_ERR_SOCK_NOK_HTTP;
 	}
-	// fixme
-	recv_buf = strchr(recv_buf, '\n') + 1;
-	recv_buf = strchr(recv_buf, '\n') + 1;
-	recv_buf = strchr(recv_buf, '\n') + 1;
-	recv_buf = strchr(recv_buf, '\n') + 1;
-	recv_buf = strchr(recv_buf, ' ') + 1;
+	recv_buf = strchr(recv_buf, '\n') + 1; // skipping over "HTTP/1.1 200 OK\r\n"
+	recv_buf = strchr(recv_buf, '\n') + 1; // skipping over "Server: nginx/1.10.3\r\n"
+	recv_buf = strchr(recv_buf, '\n') + 1; // skipping over "Date: ...\r\n"
+	recv_buf = strchr(recv_buf, '\n') + 1; // skipping over "Content-Type: application/octet-stream\r\n"
+	recv_buf = strchr(recv_buf, ' ') + 1; // skipping over "Content-Length: "
 	message_len = nwfs_connect_to_server_atoi(recv_buf);
-	recv_buf = strchr(recv_buf, '\n') + 1;
-	recv_buf = strchr(recv_buf, '\n') + 1;
-	recv_buf = strchr(recv_buf, '\n') + 1;
-	return_code = *(u64 *)(recv_buf);
+	recv_buf = strchr(recv_buf, '\n') + 1; // skipping over, well, the message length (and \r\n)
+	recv_buf = strchr(recv_buf, '\n') + 1; // skipping over "Connection: close\r\n"
+	recv_buf = strchr(recv_buf, '\n') + 1; // skipping over the finishing "\r\n" of the HTTP header
+	memcpy(&return_code, recv_buf, 8);
 	recv_buf += 8;
 	message_len -= 8;
-	if ((message_len == 0) != (output_buf == NULL)) {
-		return NWFS_ERR_BAD_ARGUMENT;
-	}
 #ifdef NWFSDEBUG
-	printk(KERN_DEBUG "message_len = %d, recv_buf @0x%p\n", message_len, recv_buf);
+	printk(KERN_DEBUG "message_len = %d, recv_buf @0x%p, return code = %llu\n", message_len, recv_buf, return_code);
 #endif
 	if (message_len != 0) {
 		memcpy(output_buf, recv_buf, message_len);

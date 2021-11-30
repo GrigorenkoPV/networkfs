@@ -7,13 +7,15 @@
 #define NWFS_MAX_FILE_NAME_LENGTH 256
 #define NWFS_MAX_FILES_IN_DIR 16
 
+struct nwfs_entry {
+	unsigned char entry_type; // DT_DIR (4) or DT_REG (8)
+	ino_t ino;
+	char name[NWFS_MAX_FILE_NAME_LENGTH];
+};
+
 struct nwfs_entries {
 	size_t entries_count;
-	struct entry {
-		unsigned char entry_type; // DT_DIR (4) or DT_REG (8)
-		ino_t ino;
-		char name[NWFS_MAX_FILE_NAME_LENGTH];
-	} entries[NWFS_MAX_FILES_IN_DIR];
+	struct nwfs_entry entries[NWFS_MAX_FILES_IN_DIR];
 };
 
 struct nwfs_content {
