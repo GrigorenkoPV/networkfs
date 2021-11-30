@@ -105,11 +105,20 @@ struct inode *nwfs_get_inode(struct super_block *sb, const struct inode *dir, um
 
 struct dentry *nwfs_lookup(struct inode *parent_inode, struct dentry *child_dentry, unsigned int flag)
 {
+	struct nwfs_entry_info entry_info;
+	struct inode *inode;
+	u64 err;
 #ifdef NWFSDEBUG
 	printk(KERN_DEBUG "nwfs_lookup: parent_inode @%p, child_dentry @%p, flag = %u\n", parent_inode, child_dentry,
 	       flag);
 #endif
-	return NULL; // todo
+	err = nwfs_api_lookup(token_buffer, parent_inode->i_ino, child_dentry->d_name.name, &entry_info);
+	if (err == NWFS_OK) {
+		inode = nwfs_get_inode(parent_inode->i_sb, NULL, entry_info.entry_type == DT_DIR ? S_IFDIR : S_IFREG,
+				       entry_info.ino);
+		d_add(child_dentry, inode);
+	}
+	return NULL;
 }
 
 int nwfs_iterate(struct file *filp, struct dir_context *ctx)
@@ -125,7 +134,7 @@ int nwfs_iterate(struct file *filp, struct dir_context *ctx)
 	inode = dentry->d_inode;
 
 #ifdef NWFSDEBUG
-	printk(KERN_DEBUG "nwfs_iterate: filp @%p, ctx @%p, ctx->pos = %lu, filp->f_pos = %lu\n", filp, ctx, ctx->pos,
+	printk(KERN_DEBUG "nwfs_iterate: filp @%p, ctx @%p, ctx->pos = %llu, filp->f_pos = %llu\n", filp, ctx, ctx->pos,
 	       filp->f_pos);
 #endif
 	ctx->pos = filp->f_pos;
@@ -137,8 +146,7 @@ int nwfs_iterate(struct file *filp, struct dir_context *ctx)
 		} else {
 			if (contents == NULL) {
 #ifdef NWFSDEBUG
-				printk(KERN_DEBUG "nwfs_iterate: getting contents for inode = %lu, token = %s\n",
-				       inode->i_ino, token_buffer);
+				printk(KERN_DEBUG "nwfs_iterate: getting contents for inode = %lu\n", inode->i_ino);
 #endif
 				contents = kmalloc(sizeof(struct nwfs_entries), GFP_KERNEL);
 #ifdef NWFSDEBUG

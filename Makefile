@@ -77,8 +77,8 @@ umount:
 	@sudo dmesg -c
 
 stuff:
-	ls -l "$$(dirname "$(mount_path)")"
+	ls -lah "$$(dirname "$(mount_path)")"
 	@sudo dmesg -c
-	-ls -l "$(mount_path)"
+	-ls -lah "$(mount_path)"
 	@sudo dmesg -c
 
