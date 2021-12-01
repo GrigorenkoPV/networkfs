@@ -190,7 +190,6 @@ int nwfs_create(struct inode *parent_inode, struct dentry *child_dentry, umode_t
 {
 	ino_t ino;
 	u64 err;
-	enum networkfs_inode_kind kind;
 #ifdef NWFSDEBUG
 	printk(KERN_DEBUG "nwfs_create: parent_inode @%p, child_dentry @%p, mode = 0x%016x, b = %d\n", parent_inode,
 	       child_dentry, mode, b);
@@ -204,8 +203,10 @@ int nwfs_create(struct inode *parent_inode, struct dentry *child_dentry, umode_t
 
 int nwfs_unlink(struct inode *parent_inode, struct dentry *child_dentry)
 {
+	u64 err;
 #ifdef NWFSDEBUG
 	printk(KERN_DEBUG "nwfs_unlink: parent_inode @%p, child_dentry @%p\n", parent_inode, child_dentry);
 #endif
+	err = nwfs_api_unlink(token_buffer, parent_inode->i_ino, child_dentry->d_name.name);
 	return 0;
 }

@@ -4,9 +4,9 @@ KERNEL_VERSION = $(shell uname -r)
 KDIR = /lib/modules/$(KERNEL_VERSION)/build
 
 # the name of the module we're gonna build
-module_name = networkfs
+MODULE_NAME = networkfs
 # telling linux's makefiles that we want to build our module
-obj-m += $(module_name).o
+obj-m += $(MODULE_NAME).o
 
 
 # the list of our source files
@@ -16,7 +16,7 @@ SRCS += src/networkfs.c src/utils.c src/api.c
 OBJS += $(SRCS:.c=.o)
 # ... and telling linux's makefiles that in order to generate our module,
 # they will have to compile the provided files first
-$(module_name)-objs := $(OBJS)
+$(MODULE_NAME)-objs := $(OBJS)
 
 # The way it works is a bit funky to say the least.
 # If you're fine with having essentially one C file for your module (let's say modulename.c),
@@ -51,46 +51,47 @@ clean:
 
 # loads/unloads the module and prints dmesg's messages
 install: all
-	sudo insmod $(module_name).ko
+	sudo insmod $(MODULE_NAME).ko
 	@sudo dmesg -c
 remove:
-	sudo rmmod $(module_name)
+	sudo rmmod $(MODULE_NAME)
 	@sudo dmesg -c
 
 
 # mounts/unmounts a test directory, feel free to change variables below
-mount_path = /mnt/networkfs
-token_file = token.txt
+MOUNT_PATH = /mnt/networkfs
+TOKEN_FILE = token.txt
 
 # if we have no token, gets it using binary api and strips 0x00 bytes of the return code
 # don't forget to $(make install) first
 mount:
-	if [ ! -f "$(token_file)" ]; \
+	if [ ! -f "$(TOKEN_FILE)" ]; \
 	then curl https://nerc.itmo.ru/teaching/os/networkfs/v1/token/issue | \
-	 tr -d '\000' > "$(token_file)"; \
+	 tr -d '\000' > "$(TOKEN_FILE)"; \
 	fi
-	mkdir -p "$(mount_path)"
-	sudo mount --type networkfs "$(shell cat $(token_file))" "$(mount_path)"
+	mkdir -p "$(MOUNT_PATH)"
+	sudo mount --type networkfs "$(shell cat $(TOKEN_FILE))" "$(MOUNT_PATH)"
 	@sudo dmesg -c
 umount:
-	sudo umount "$(mount_path)"
+	sudo umount "$(MOUNT_PATH)"
 	@sudo dmesg -c
 
-TEST_FILE_NAME=$(shell date +%s)
+TIMESTAMP = $(shell date +%s)
+TEST_FILE_NAME = $(MOUNT_PATH)/$(TIMESTAMP).txt
+TEST_DIR_NAME = $(MOUNT_PATH)/$(TIMESTAMP).dir
 
 stuff:
-	ls -lahi "$$(dirname "$(mount_path)")"
+	ls -lahi "$$(dirname "$(MOUNT_PATH)")"
 	@sudo dmesg -c
-	-ls -lahi "$(mount_path)"
-	@sudo dmesg -c
-	-touch "$(mount_path)/$(TEST_FILE_NAME)"
-	@sudo dmesg -c
-	-mkdir "$(mount_path)/$(TEST_FILE_NAME)"
-	@sudo dmesg -c
-	-ls -lahi "$(mount_path)"
-	@sudo dmesg -c
-	-rm "$(mount_path)/$(TEST_FILE_NAME)"
-	@sudo dmesg -c
-	-ls -lahi "$(mount_path)"
-	@sudo dmesg -c
+	-ls -lahi "$(MOUNT_PATH)"; sudo dmesg -c
+
+	-touch "$(TEST_FILE_NAME)"; sudo dmesg -c
+	-ls -lahi "$(MOUNT_PATH)"; sudo dmesg -c > /dev/null
+	-rm "$(TEST_FILE_NAME)"; sudo dmesg -c
+	-ls -lahi "$(MOUNT_PATH)"; sudo dmesg -c > /dev/null
+
+	-mkdir "$(TEST_DIR_NAME)"; sudo dmesg -c
+	-ls -lahi "$(MOUNT_PATH)"; sudo dmesg -c > /dev/null
+	-rmdir "$(TEST_DIR_NAME)"; sudo dmesg -c
+	-ls -lahi "$(MOUNT_PATH)"; sudo dmesg -c > /dev/null
 
