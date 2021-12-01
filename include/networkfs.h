@@ -2,6 +2,7 @@
 
 #include <linux/init.h>
 #include <linux/module.h>
+#include <linux/types.h>
 #include <linux/fs.h>
 #include <linux/kernel.h>
 
@@ -20,6 +21,9 @@ struct inode *nwfs_get_inode(struct super_block *sb, const struct inode *dir, um
 
 struct dentry *nwfs_lookup(struct inode *parent_inode, struct dentry *child_dentry, unsigned int flag);
 int nwfs_iterate(struct file *filp, struct dir_context *ctx);
+
+int nwfs_create(struct inode *parent_inode, struct dentry *child_dentry, umode_t mode, bool b);
+int nwfs_unlink(struct inode *parent_inode, struct dentry *child_dentry);
 
 module_init(nwfs_init);
 module_exit(nwfs_exit);

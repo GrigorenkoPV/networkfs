@@ -4,7 +4,7 @@
 #include <linux/memory.h>
 
 struct file_system_type nwfs_fs_type = { .name = "networkfs", .mount = nwfs_mount, .kill_sb = nwfs_kill_sb };
-struct inode_operations nwfs_inode_ops = { .lookup = nwfs_lookup };
+struct inode_operations nwfs_inode_ops = { .lookup = nwfs_lookup, .create = nwfs_create, .unlink = nwfs_unlink };
 struct file_operations nwfs_dir_ops = { .iterate = nwfs_iterate };
 
 // fixme
@@ -89,7 +89,7 @@ struct inode *nwfs_get_inode(struct super_block *sb, const struct inode *dir, um
 #ifdef NWFSDEBUG
 	printk(KERN_DEBUG "nwfs_get_inode: sb @%p, dir @%p, mode = 0x%016x, i_ino = %d\n", sb, dir, mode, i_ino);
 #endif
-	mode |= S_IRWXU | S_IRWXG | S_IRWXO;
+	mode |= S_IRWXUGO;
 #ifdef NWFSDEBUG
 	printk(KERN_DEBUG "nwfs_get_inode: updated mode to = 0x%016x\n", mode);
 #endif
@@ -128,7 +128,9 @@ int nwfs_iterate(struct file *filp, struct dir_context *ctx)
 	struct dentry *dentry;
 	struct inode *inode;
 	u64 err;
+#ifdef NWFSDEBUG
 	size_t e_no;
+#endif
 	contents = NULL;
 	dentry = filp->f_path.dentry;
 	inode = dentry->d_inode;
@@ -182,4 +184,28 @@ int nwfs_iterate(struct file *filp, struct dir_context *ctx)
 		kfree(contents);
 	}
 	return contents->entries_count + 2;
+}
+
+int nwfs_create(struct inode *parent_inode, struct dentry *child_dentry, umode_t mode, bool b)
+{
+	ino_t ino;
+	u64 err;
+	enum networkfs_inode_kind kind;
+#ifdef NWFSDEBUG
+	printk(KERN_DEBUG "nwfs_create: parent_inode @%p, child_dentry @%p, mode = 0x%016x, b = %d\n", parent_inode,
+	       child_dentry, mode, b);
+#endif
+	err = nwfs_api_create(token_buffer, parent_inode->i_ino, child_dentry->d_name.name, file, &ino);
+	if (err == NWFS_OK) {
+		d_add(child_dentry, nwfs_get_inode(parent_inode->i_sb, NULL, mode, ino));
+	}
+	return 0;
+}
+
+int nwfs_unlink(struct inode *parent_inode, struct dentry *child_dentry)
+{
+#ifdef NWFSDEBUG
+	printk(KERN_DEBUG "nwfs_unlink: parent_inode @%p, child_dentry @%p\n", parent_inode, child_dentry);
+#endif
+	return 0;
 }

@@ -76,9 +76,21 @@ umount:
 	sudo umount "$(mount_path)"
 	@sudo dmesg -c
 
+TEST_FILE_NAME=$(shell date +%s)
+
 stuff:
-	ls -lah "$$(dirname "$(mount_path)")"
+	ls -lahi "$$(dirname "$(mount_path)")"
 	@sudo dmesg -c
-	-ls -lah "$(mount_path)"
+	-ls -lahi "$(mount_path)"
+	@sudo dmesg -c
+	-touch "$(mount_path)/$(TEST_FILE_NAME)"
+	@sudo dmesg -c
+	-mkdir "$(mount_path)/$(TEST_FILE_NAME)"
+	@sudo dmesg -c
+	-ls -lahi "$(mount_path)"
+	@sudo dmesg -c
+	-rm "$(mount_path)/$(TEST_FILE_NAME)"
+	@sudo dmesg -c
+	-ls -lahi "$(mount_path)"
 	@sudo dmesg -c
 
