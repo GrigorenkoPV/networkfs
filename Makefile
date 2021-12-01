@@ -85,16 +85,18 @@ stuff:
 	@sudo dmesg -c
 	-ls -lahi "$(MOUNT_PATH)"; sudo dmesg -c
 
-	-touch "$(TEST_FILE_NAME)"; sudo dmesg -c
-	-ls -lahi "$(MOUNT_PATH)"; sudo dmesg -c > /dev/null
-	-rm "$(TEST_FILE_NAME)"; sudo dmesg -c
-	-ls -lahi "$(MOUNT_PATH)"; sudo dmesg -c > /dev/null
+#	-touch "$(TEST_FILE_NAME)"; sudo dmesg -c
+#	-ls -lahi "$(MOUNT_PATH)"; sudo dmesg -c > /dev/null
+#	-rm "$(TEST_FILE_NAME)"; sudo dmesg -c
+#	-ls -lahi "$(MOUNT_PATH)"; sudo dmesg -c > /dev/null
 
-	-mkdir "$(TEST_DIR_NAME)"; sudo dmesg -c
-	-ls -lahi "$(MOUNT_PATH)"; sudo dmesg -c > /dev/null
-	-rmdir "$(TEST_DIR_NAME)"; sudo dmesg -c
-	-ls -lahi "$(MOUNT_PATH)"; sudo dmesg -c > /dev/null
+#	-mkdir "$(TEST_DIR_NAME)"; sudo dmesg -c
+#	-ls -lahi "$(MOUNT_PATH)"; sudo dmesg -c > /dev/null
+#	-rmdir "$(TEST_DIR_NAME)"; sudo dmesg -c
+#	-ls -lahi "$(MOUNT_PATH)"; sudo dmesg -c > /dev/null
 
+	-echo "Test" > "$(MOUNT_PATH)/file1"; sudo dmesg -c
+	-cat "$(MOUNT_PATH)/file1"; sudo dmesg -c
 
 tests: all
 	python3 -m tests BasicTestCases -f

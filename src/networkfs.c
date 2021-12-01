@@ -11,6 +11,7 @@ struct inode_operations nwfs_inode_ops = { .lookup = nwfs_lookup,
 					   .rmdir = nwfs_rmdir,
 					   .link = nwfs_link };
 struct file_operations nwfs_dir_ops = { .iterate = nwfs_iterate };
+struct file_operations nwfs_file_ops = { .read = nwfs_read, .write = nwfs_write };
 
 int nwfs_init(void)
 {
@@ -107,7 +108,11 @@ struct inode *nwfs_get_inode(struct super_block *sb, const struct inode *dir, um
 	if (inode != NULL) {
 		inode->i_ino = i_ino;
 		inode->i_op = &nwfs_inode_ops;
-		inode->i_fop = &nwfs_dir_ops;
+		if (S_ISDIR(mode)) {
+			inode->i_fop = &nwfs_dir_ops;
+		} else if (S_ISREG(mode)) {
+			inode->i_fop = &nwfs_file_ops;
+		}
 		inode_init_owner(inode, dir, mode);
 	}
 	return inode;
@@ -248,6 +253,30 @@ int nwfs_rmdir(struct inode *parent_inode, struct dentry *child_dentry)
 #endif
 	err = nwfs_api_rmdir(parent_inode->i_sb->s_fs_info, parent_inode->i_ino, child_dentry->d_name.name);
 	return 0;
+}
+ssize_t nwfs_read(struct file *filp, char *buffer, size_t len, loff_t *offset)
+{
+	u64 err;
+	struct nwfs_content content;
+#ifdef NWFSDEBUG
+	printk(KERN_DEBUG "nwfs_read: filp @%p, buffer @%p, len = %lu, offset @%p\n", filp, buffer, len, offset);
+#endif
+	err = nwfs_api_read(filp->f_inode->i_sb->s_fs_info, filp->f_inode->i_ino, &content);
+	if (err == NWFS_OK) {
+		if (content.content_length < len) {
+			len = content.content_length;
+		}
+		//todo
+	}
+	return -1;
+}
+ssize_t nwfs_write(struct file *filp, const char *buffer, size_t len, loff_t *offset)
+{
+#ifdef NWFSDEBUG
+	printk(KERN_DEBUG "nwfs_write: filp @%p, buffer @%p, len = %lu, offset @%p\n", filp, buffer, len, offset);
+#endif
+	//todo
+	return -1;
 }
 
 int nwfs_link(struct dentry *old_dentry, struct inode *parent_dir, struct dentry *new_dentry)
