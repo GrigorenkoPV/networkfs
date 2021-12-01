@@ -25,5 +25,8 @@ int nwfs_iterate(struct file *filp, struct dir_context *ctx);
 int nwfs_create(struct inode *parent_inode, struct dentry *child_dentry, umode_t mode, bool b);
 int nwfs_unlink(struct inode *parent_inode, struct dentry *child_dentry);
 
+int nwfs_mkdir(struct inode *parent_inode, struct dentry *child_dentry, umode_t mode);
+int nwfs_rmdir(struct inode *parent_inode, struct dentry *child_dentry);
+
 module_init(nwfs_init);
 module_exit(nwfs_exit);

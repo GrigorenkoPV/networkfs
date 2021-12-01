@@ -43,9 +43,9 @@ EXTRA_CFLAGS += -DNWFSDEBUG
 endif
 
 all:
-	make -C "$(KDIR)" M=$(PWD) modules
+	make -C "$(KDIR)" M=$(shell pwd) modules
 clean:
-	make -C "$(KDIR)" M=$(PWD) clean
+	make -C "$(KDIR)" M=$(shell pwd) clean
 
 .PHONY: all clean install remove mount umount stuff
 
@@ -95,3 +95,15 @@ stuff:
 	-rmdir "$(TEST_DIR_NAME)"; sudo dmesg -c
 	-ls -lahi "$(MOUNT_PATH)"; sudo dmesg -c > /dev/null
 
+
+tests: all
+	python3 -m tests BasicTestCases -f
+
+bonus-name: all
+	python3 -m tests NameTestCases -f
+
+bonus-wr: all
+	python3 -m tests WRTestCases -f
+
+bonus-link: all
+	python3 -m tests LinkTestCases -f

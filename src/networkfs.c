@@ -4,7 +4,11 @@
 #include <linux/memory.h>
 
 struct file_system_type nwfs_fs_type = { .name = "networkfs", .mount = nwfs_mount, .kill_sb = nwfs_kill_sb };
-struct inode_operations nwfs_inode_ops = { .lookup = nwfs_lookup, .create = nwfs_create, .unlink = nwfs_unlink };
+struct inode_operations nwfs_inode_ops = { .lookup = nwfs_lookup,
+					   .create = nwfs_create,
+					   .unlink = nwfs_unlink,
+					   .mkdir = nwfs_mkdir,
+					   .rmdir = nwfs_rmdir };
 struct file_operations nwfs_dir_ops = { .iterate = nwfs_iterate };
 
 // fixme
@@ -196,7 +200,7 @@ int nwfs_create(struct inode *parent_inode, struct dentry *child_dentry, umode_t
 #endif
 	err = nwfs_api_create(token_buffer, parent_inode->i_ino, child_dentry->d_name.name, file, &ino);
 	if (err == NWFS_OK) {
-		d_add(child_dentry, nwfs_get_inode(parent_inode->i_sb, NULL, mode, ino));
+		d_add(child_dentry, nwfs_get_inode(parent_inode->i_sb, NULL, mode | S_IFREG, ino));
 	}
 	return 0;
 }
@@ -208,5 +212,28 @@ int nwfs_unlink(struct inode *parent_inode, struct dentry *child_dentry)
 	printk(KERN_DEBUG "nwfs_unlink: parent_inode @%p, child_dentry @%p\n", parent_inode, child_dentry);
 #endif
 	err = nwfs_api_unlink(token_buffer, parent_inode->i_ino, child_dentry->d_name.name);
+	return 0;
+}
+int nwfs_mkdir(struct inode *parent_inode, struct dentry *child_dentry, umode_t mode)
+{
+	ino_t ino;
+	u64 err;
+#ifdef NWFSDEBUG
+	printk(KERN_DEBUG "nwfs_mkdir: parent_inode @%p, child_dentry @%p, mode = 0x%016x\n", parent_inode,
+	       child_dentry, mode);
+#endif
+	err = nwfs_api_create(token_buffer, parent_inode->i_ino, child_dentry->d_name.name, directory, &ino);
+	if (err == NWFS_OK) {
+		d_add(child_dentry, nwfs_get_inode(parent_inode->i_sb, NULL, mode | S_IFDIR, ino));
+	}
+	return 0;
+}
+int nwfs_rmdir(struct inode *parent_inode, struct dentry *child_dentry)
+{
+	u64 err;
+#ifdef NWFSDEBUG
+	printk(KERN_DEBUG "nwfs_unlink: parent_inode @%p, child_dentry @%p\n", parent_inode, child_dentry);
+#endif
+	err = nwfs_api_rmdir(token_buffer, parent_inode->i_ino, child_dentry->d_name.name);
 	return 0;
 }
