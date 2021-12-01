@@ -28,5 +28,7 @@ int nwfs_unlink(struct inode *parent_inode, struct dentry *child_dentry);
 int nwfs_mkdir(struct inode *parent_inode, struct dentry *child_dentry, umode_t mode);
 int nwfs_rmdir(struct inode *parent_inode, struct dentry *child_dentry);
 
+int nwfs_link(struct dentry *old_dentry, struct inode *parent_dir, struct dentry *new_dentry);
+
 module_init(nwfs_init);
 module_exit(nwfs_exit);

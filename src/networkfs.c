@@ -8,7 +8,8 @@ struct inode_operations nwfs_inode_ops = { .lookup = nwfs_lookup,
 					   .create = nwfs_create,
 					   .unlink = nwfs_unlink,
 					   .mkdir = nwfs_mkdir,
-					   .rmdir = nwfs_rmdir };
+					   .rmdir = nwfs_rmdir,
+					   .link = nwfs_link };
 struct file_operations nwfs_dir_ops = { .iterate = nwfs_iterate };
 
 // fixme
@@ -232,8 +233,19 @@ int nwfs_rmdir(struct inode *parent_inode, struct dentry *child_dentry)
 {
 	u64 err;
 #ifdef NWFSDEBUG
-	printk(KERN_DEBUG "nwfs_unlink: parent_inode @%p, child_dentry @%p\n", parent_inode, child_dentry);
+	printk(KERN_DEBUG "nwfs_rmdir: parent_inode @%p, child_dentry @%p\n", parent_inode, child_dentry);
 #endif
 	err = nwfs_api_rmdir(token_buffer, parent_inode->i_ino, child_dentry->d_name.name);
+	return 0;
+}
+
+int nwfs_link(struct dentry *old_dentry, struct inode *parent_dir, struct dentry *new_dentry)
+{
+	u64 err;
+#ifdef NWFSDEBUG
+	printk(KERN_DEBUG "nwfs_link: old_dentry @%p, parent_dir @%p, new_dentry @%p\n", old_dentry, parent_dir,
+	       new_dentry);
+#endif
+	err = nwfs_api_link(token_buffer, old_dentry->d_inode->i_ino, parent_dir->i_ino, new_dentry->d_name.name);
 	return 0;
 }
