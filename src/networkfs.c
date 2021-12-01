@@ -12,9 +12,6 @@ struct inode_operations nwfs_inode_ops = { .lookup = nwfs_lookup,
 					   .link = nwfs_link };
 struct file_operations nwfs_dir_ops = { .iterate = nwfs_iterate };
 
-// fixme
-static char token_buffer[1024];
-
 int nwfs_init(void)
 {
 	int err;
@@ -47,24 +44,31 @@ void nwfs_exit(void)
 struct dentry *nwfs_mount(struct file_system_type *fs_type, int flags, const char *token, void *data)
 {
 	struct dentry *ret;
+	char *token_alloc;
+	size_t token_len;
 #ifdef NWFSDEBUG
-	printk(KERN_DEBUG "nwfs_mount: flags = 0x%x, token = %s, data @%p = %s\n", flags, token, data,
+	printk(KERN_DEBUG "nwfs_mount: flags = 0x%x, token @%p = %s, data @%p = %s\n", flags, token, token, data,
 	       (char const *)data);
 #endif
-	ret = mount_nodev(fs_type, flags, data, nwfs_fill_super);
+	token_len = strlen(token);
+	token_alloc = kmalloc(token_len + 1, GFP_KERNEL);
+	if (token_alloc != NULL) {
+		memcpy(token_alloc, token, token_len + 1);
+		ret = mount_nodev(fs_type, flags, token_alloc, nwfs_fill_super);
+	}
 	if (ret == NULL) {
 		printk(KERN_ERR "nwfs_mount: Can't mount file system\n");
 	} else {
 #ifdef NWFSDEBUG
 		printk(KERN_DEBUG "nwfs_mount: success!\n");
 #endif
-		strcpy(token_buffer, token);
 	}
 	return ret;
 }
 
 void nwfs_kill_sb(struct super_block *sb)
 {
+	kfree(sb->s_fs_info);
 #ifdef NWFSDEBUG
 	printk(KERN_DEBUG "nwfs_kill_sb: Successfully unmounted\n");
 #endif
@@ -76,6 +80,7 @@ int nwfs_fill_super(struct super_block *sb, void *data, int silent)
 #ifdef NWFSDEBUG
 	printk(KERN_DEBUG "nwfs_fill_super: data @%p = %s, silent = %d\n", data, (char const *)data, silent);
 #endif
+	sb->s_fs_info = data;
 	inode = nwfs_get_inode(sb, NULL, S_IFDIR, 1000);
 	sb->s_root = d_make_root(inode);
 	if (sb->s_root == NULL) {
@@ -117,7 +122,8 @@ struct dentry *nwfs_lookup(struct inode *parent_inode, struct dentry *child_dent
 	printk(KERN_DEBUG "nwfs_lookup: parent_inode @%p, child_dentry @%p, flag = %u\n", parent_inode, child_dentry,
 	       flag);
 #endif
-	err = nwfs_api_lookup(token_buffer, parent_inode->i_ino, child_dentry->d_name.name, &entry_info);
+	err = nwfs_api_lookup(parent_inode->i_sb->s_fs_info, parent_inode->i_ino, child_dentry->d_name.name,
+			      &entry_info);
 	if (err == NWFS_OK) {
 		inode = nwfs_get_inode(parent_inode->i_sb, NULL, entry_info.entry_type == DT_DIR ? S_IFDIR : S_IFREG,
 				       entry_info.ino);
@@ -159,7 +165,10 @@ int nwfs_iterate(struct file *filp, struct dir_context *ctx)
 #ifdef NWFSDEBUG
 				printk(KERN_DEBUG "nwfs_iterate: alloced @0x%p\n", contents);
 #endif
-				err = nwfs_api_list(token_buffer, inode->i_ino, contents);
+				if (contents == NULL) {
+					return -ENOMEM;
+				}
+				err = nwfs_api_list(filp->f_inode->i_sb->s_fs_info, inode->i_ino, contents);
 #ifdef NWFSDEBUG
 				printk(KERN_DEBUG "nwfs_iterate: got return code = %llu\n", err);
 				if (err == NWFS_OK) {
@@ -199,7 +208,8 @@ int nwfs_create(struct inode *parent_inode, struct dentry *child_dentry, umode_t
 	printk(KERN_DEBUG "nwfs_create: parent_inode @%p, child_dentry @%p, mode = 0x%016x, b = %d\n", parent_inode,
 	       child_dentry, mode, b);
 #endif
-	err = nwfs_api_create(token_buffer, parent_inode->i_ino, child_dentry->d_name.name, file, &ino);
+	err = nwfs_api_create(parent_inode->i_sb->s_fs_info, parent_inode->i_ino, child_dentry->d_name.name, file,
+			      &ino);
 	if (err == NWFS_OK) {
 		d_add(child_dentry, nwfs_get_inode(parent_inode->i_sb, NULL, mode | S_IFREG, ino));
 	}
@@ -212,7 +222,7 @@ int nwfs_unlink(struct inode *parent_inode, struct dentry *child_dentry)
 #ifdef NWFSDEBUG
 	printk(KERN_DEBUG "nwfs_unlink: parent_inode @%p, child_dentry @%p\n", parent_inode, child_dentry);
 #endif
-	err = nwfs_api_unlink(token_buffer, parent_inode->i_ino, child_dentry->d_name.name);
+	err = nwfs_api_unlink(parent_inode->i_sb->s_fs_info, parent_inode->i_ino, child_dentry->d_name.name);
 	return 0;
 }
 int nwfs_mkdir(struct inode *parent_inode, struct dentry *child_dentry, umode_t mode)
@@ -223,7 +233,8 @@ int nwfs_mkdir(struct inode *parent_inode, struct dentry *child_dentry, umode_t 
 	printk(KERN_DEBUG "nwfs_mkdir: parent_inode @%p, child_dentry @%p, mode = 0x%016x\n", parent_inode,
 	       child_dentry, mode);
 #endif
-	err = nwfs_api_create(token_buffer, parent_inode->i_ino, child_dentry->d_name.name, directory, &ino);
+	err = nwfs_api_create(parent_inode->i_sb->s_fs_info, parent_inode->i_ino, child_dentry->d_name.name, directory,
+			      &ino);
 	if (err == NWFS_OK) {
 		d_add(child_dentry, nwfs_get_inode(parent_inode->i_sb, NULL, mode | S_IFDIR, ino));
 	}
@@ -235,7 +246,7 @@ int nwfs_rmdir(struct inode *parent_inode, struct dentry *child_dentry)
 #ifdef NWFSDEBUG
 	printk(KERN_DEBUG "nwfs_rmdir: parent_inode @%p, child_dentry @%p\n", parent_inode, child_dentry);
 #endif
-	err = nwfs_api_rmdir(token_buffer, parent_inode->i_ino, child_dentry->d_name.name);
+	err = nwfs_api_rmdir(parent_inode->i_sb->s_fs_info, parent_inode->i_ino, child_dentry->d_name.name);
 	return 0;
 }
 
@@ -246,6 +257,7 @@ int nwfs_link(struct dentry *old_dentry, struct inode *parent_dir, struct dentry
 	printk(KERN_DEBUG "nwfs_link: old_dentry @%p, parent_dir @%p, new_dentry @%p\n", old_dentry, parent_dir,
 	       new_dentry);
 #endif
-	err = nwfs_api_link(token_buffer, old_dentry->d_inode->i_ino, parent_dir->i_ino, new_dentry->d_name.name);
+	err = nwfs_api_link(parent_dir->i_sb->s_fs_info, old_dentry->d_inode->i_ino, parent_dir->i_ino,
+			    new_dentry->d_name.name);
 	return 0;
 }
