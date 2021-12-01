@@ -68,6 +68,8 @@ u64 nwfs_connect_to_server(const char *command, int params_count, url_key_value_
 	struct socket *sock_ptr;
 	struct sockaddr_in s_addr;
 	char *send_buf, *recv_buf;
+	char buff_escape[4];
+	char const *ptr;
 	int i;
 	int error;
 	int message_len;
@@ -108,16 +110,18 @@ u64 nwfs_connect_to_server(const char *command, int params_count, url_key_value_
 	strcat(send_buf, token);
 	strcat(send_buf, "/fs/");
 	strcat(send_buf, command);
-	strcat(send_buf, "?");
 	i = 0;
 	while (i < params_count) {
-		if (i != 0) {
-			strcat(send_buf, "&");
-		}
+		strcat(send_buf, i == 0 ? "?" : "&");
 		strcat(send_buf, params[i][0]);
+		ptr = params[i][1];
 		if (params[i][1] != NULL) {
 			strcat(send_buf, "=");
-			strcat(send_buf, params[i][1]);
+			while (*ptr != '\0') {
+				sprintf(buff_escape, "%%%02x", *ptr);
+				strcat(send_buf, buff_escape);
+				++ptr;
+			}
 		}
 		i++;
 	}
