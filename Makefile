@@ -70,7 +70,7 @@ mount:
 	 tr -d '\000' > "$(TOKEN_FILE)"; \
 	fi
 	mkdir -p "$(MOUNT_PATH)"
-	sudo mount --type networkfs "$(shell cat $(TOKEN_FILE))" "$(MOUNT_PATH)"
+	sudo mount --type networkfs "$$(cat "$(TOKEN_FILE)")" "$(MOUNT_PATH)"
 	@sudo dmesg -c
 umount:
 	sudo umount "$(MOUNT_PATH)"

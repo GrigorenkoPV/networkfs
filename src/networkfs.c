@@ -307,9 +307,7 @@ ssize_t nwfs_write(struct file *filp, const char *buffer, size_t len, loff_t *of
 				return -EFAULT;
 			}
 		}
-		if (*offset + n > content.content_length) {
-			content.content_length = *offset + n;
-		}
+		content.content_length = *offset + n;
 		err = nwfs_api_write(filp->f_inode->i_sb->s_fs_info, filp->f_inode->i_ino, &content);
 		if (err == NWFS_OK) {
 			*offset += n;
