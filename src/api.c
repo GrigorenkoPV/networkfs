@@ -72,7 +72,7 @@ u64 nwfs_api_read(char const *token, ino_t inode, struct nwfs_content *result)
 	params[0][0] = "inode";
 	params[0][1] = inode_s;
 
-	return nwfs_connect_to_server("create", 1, params, token, (char *)(void *)result);
+	return nwfs_connect_to_server("read", 1, params, token, (char *)(void *)result);
 }
 
 u64 nwfs_api_write(char const *token, ino_t inode, char const *content)

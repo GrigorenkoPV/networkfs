@@ -2,6 +2,7 @@
 #include "utils.h"
 #include "api.h"
 #include <linux/memory.h>
+#include <linux/uaccess.h>
 
 struct file_system_type nwfs_fs_type = { .name = "networkfs", .mount = nwfs_mount, .kill_sb = nwfs_kill_sb };
 struct inode_operations nwfs_inode_ops = { .lookup = nwfs_lookup,
@@ -254,22 +255,34 @@ int nwfs_rmdir(struct inode *parent_inode, struct dentry *child_dentry)
 	err = nwfs_api_rmdir(parent_inode->i_sb->s_fs_info, parent_inode->i_ino, child_dentry->d_name.name);
 	return 0;
 }
+
 ssize_t nwfs_read(struct file *filp, char *buffer, size_t len, loff_t *offset)
 {
 	u64 err;
 	struct nwfs_content content;
+	ssize_t i, n;
 #ifdef NWFSDEBUG
-	printk(KERN_DEBUG "nwfs_read: filp @%p, buffer @%p, len = %lu, offset @%p\n", filp, buffer, len, offset);
+	printk(KERN_DEBUG "nwfs_read: filp @%p, buffer @%p, len = %lu, offset @%p = %lld\n", filp, buffer, len, offset,
+	       *offset);
+	printk(KERN_DEBUG "nwfs_read: filp->f_pos = %lld\n", filp->f_pos);
 #endif
 	err = nwfs_api_read(filp->f_inode->i_sb->s_fs_info, filp->f_inode->i_ino, &content);
 	if (err == NWFS_OK) {
-		if (content.content_length < len) {
-			len = content.content_length;
+		n = content.content_length - *offset;
+		if (len < n) {
+			n = len;
 		}
-		//todo
+		for (i = 0; i < n; ++i) {
+			if (put_user(content.content[*offset + i], buffer + i) != 0) {
+				return -EFAULT;
+			}
+		}
+		*offset += n;
+		return n;
 	}
-	return -1;
+	return -EFAULT;
 }
+
 ssize_t nwfs_write(struct file *filp, const char *buffer, size_t len, loff_t *offset)
 {
 #ifdef NWFSDEBUG
