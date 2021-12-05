@@ -32,7 +32,7 @@ enum networkfs_inode_kind { directory, file };
 u64 nwfs_api_list(char const *token, ino_t inode, struct nwfs_entries *result);
 u64 nwfs_api_create(char const *token, ino_t parent, char const *name, enum networkfs_inode_kind type, ino_t *result);
 u64 nwfs_api_read(char const *token, ino_t inode, struct nwfs_content *result);
-u64 nwfs_api_write(char const *token, ino_t inode, char const *content);
+u64 nwfs_api_write(char const *token, ino_t inode, struct nwfs_content *content);
 u64 nwfs_api_link(char const *token, ino_t source, ino_t parent, char const *name);
 u64 nwfs_api_unlink(char const *token, ino_t parent, char const *name);
 u64 nwfs_api_rmdir(char const *token, ino_t parent, char const *name);

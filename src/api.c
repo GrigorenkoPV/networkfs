@@ -3,6 +3,11 @@
 
 #define INODE_S_LEN (sizeof(ino_t) * 3)
 
+static void c_string_to_string_slice(struct string_slice *dst, char const *src)
+{
+	dst->len = strlen(dst->start = src);
+}
+
 u64 nwfs_api_list(char const *token, ino_t inode, struct nwfs_entries *result)
 {
 	url_key_value_pair params[1];
@@ -16,8 +21,8 @@ u64 nwfs_api_list(char const *token, ino_t inode, struct nwfs_entries *result)
 
 	sprintf(inode_s, "%lu", inode);
 
-	params[0][0] = "inode";
-	params[0][1] = inode_s;
+	c_string_to_string_slice(&params[0][0], "inode");
+	c_string_to_string_slice(&params[0][1], inode_s);
 
 	return nwfs_connect_to_server("list", 1, params, token, (char *)(void *)result);
 }
@@ -35,19 +40,19 @@ u64 nwfs_api_create(char const *token, ino_t parent, char const *name, enum netw
 
 	sprintf(parent_s, "%lu", parent);
 
-	params[0][0] = "parent";
-	params[0][1] = parent_s;
+	c_string_to_string_slice(&params[0][0], "parent");
+	c_string_to_string_slice(&params[0][1], parent_s);
 
-	params[1][0] = "name";
-	params[1][1] = name;
+	c_string_to_string_slice(&params[1][0], "name");
+	c_string_to_string_slice(&params[1][1], name);
 
-	params[2][0] = "type";
+	c_string_to_string_slice(&params[2][0], "type");
 	switch (type) {
 	case directory:
-		params[2][1] = "directory";
+		c_string_to_string_slice(&params[2][1], "directory");
 		break;
 	case file:
-		params[2][1] = "file";
+		c_string_to_string_slice(&params[2][1], "file");
 		break;
 	default:
 		return NWFS_ERR_BAD_ARGUMENT;
@@ -69,13 +74,13 @@ u64 nwfs_api_read(char const *token, ino_t inode, struct nwfs_content *result)
 
 	sprintf(inode_s, "%lu", inode);
 
-	params[0][0] = "inode";
-	params[0][1] = inode_s;
+	c_string_to_string_slice(&params[0][0], "inode");
+	c_string_to_string_slice(&params[0][1], inode_s);
 
 	return nwfs_connect_to_server("read", 1, params, token, (char *)(void *)result);
 }
 
-u64 nwfs_api_write(char const *token, ino_t inode, char const *content)
+u64 nwfs_api_write(char const *token, ino_t inode, struct nwfs_content *content)
 {
 	url_key_value_pair params[2];
 	char inode_s[INODE_S_LEN];
@@ -88,13 +93,14 @@ u64 nwfs_api_write(char const *token, ino_t inode, char const *content)
 
 	sprintf(inode_s, "%lu", inode);
 
-	params[0][0] = "inode";
-	params[0][1] = inode_s;
+	c_string_to_string_slice(&params[0][0], "inode");
+	c_string_to_string_slice(&params[0][1], inode_s);
 
-	params[1][0] = "content";
-	params[1][1] = content;
+	c_string_to_string_slice(&params[1][0], "content");
+	params[1][1].start = content->content;
+	params[1][1].len = content->content_length;
 
-	return nwfs_connect_to_server("write", 1, params, token, NULL);
+	return nwfs_connect_to_server("write", 2, params, token, NULL);
 }
 
 u64 nwfs_api_link(char const *token, ino_t source, ino_t parent, char const *name)
@@ -112,14 +118,14 @@ u64 nwfs_api_link(char const *token, ino_t source, ino_t parent, char const *nam
 	sprintf(source_s, "%lu", source);
 	sprintf(parent_s, "%lu", parent);
 
-	params[0][0] = "source";
-	params[0][1] = source_s;
+	c_string_to_string_slice(&params[0][0], "parent");
+	c_string_to_string_slice(&params[0][1], parent_s);
 
-	params[1][0] = "parent";
-	params[1][1] = parent_s;
+	c_string_to_string_slice(&params[1][0], "name");
+	c_string_to_string_slice(&params[1][1], name);
 
-	params[2][0] = "name";
-	params[2][1] = name;
+	c_string_to_string_slice(&params[2][0], "source");
+	c_string_to_string_slice(&params[2][1], source_s);
 
 	return nwfs_connect_to_server("link", 3, params, token, NULL);
 }
@@ -137,11 +143,11 @@ u64 nwfs_api_unlink(char const *token, ino_t parent, char const *name)
 
 	sprintf(parent_s, "%lu", parent);
 
-	params[0][0] = "parent";
-	params[0][1] = parent_s;
+	c_string_to_string_slice(&params[0][0], "parent");
+	c_string_to_string_slice(&params[0][1], parent_s);
 
-	params[1][0] = "name";
-	params[1][1] = name;
+	c_string_to_string_slice(&params[1][0], "name");
+	c_string_to_string_slice(&params[1][1], name);
 
 	return nwfs_connect_to_server("unlink", 2, params, token, NULL);
 }
@@ -159,11 +165,11 @@ u64 nwfs_api_rmdir(char const *token, ino_t parent, char const *name)
 
 	sprintf(parent_s, "%lu", parent);
 
-	params[0][0] = "parent";
-	params[0][1] = parent_s;
+	c_string_to_string_slice(&params[0][0], "parent");
+	c_string_to_string_slice(&params[0][1], parent_s);
 
-	params[1][0] = "name";
-	params[1][1] = name;
+	c_string_to_string_slice(&params[1][0], "name");
+	c_string_to_string_slice(&params[1][1], name);
 
 	return nwfs_connect_to_server("rmdir", 2, params, token, NULL);
 }
@@ -181,11 +187,11 @@ u64 nwfs_api_lookup(char const *token, ino_t parent, char const *name, struct nw
 
 	sprintf(parent_s, "%lu", parent);
 
-	params[0][0] = "parent";
-	params[0][1] = parent_s;
+	c_string_to_string_slice(&params[0][0], "parent");
+	c_string_to_string_slice(&params[0][1], parent_s);
 
-	params[1][0] = "name";
-	params[1][1] = name;
+	c_string_to_string_slice(&params[1][0], "name");
+	c_string_to_string_slice(&params[1][1], name);
 
 	return nwfs_connect_to_server("lookup", 2, params, token, (char *)(void *)result);
 }

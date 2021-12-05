@@ -285,11 +285,38 @@ ssize_t nwfs_read(struct file *filp, char *buffer, size_t len, loff_t *offset)
 
 ssize_t nwfs_write(struct file *filp, const char *buffer, size_t len, loff_t *offset)
 {
+	u64 err;
+	struct nwfs_content content;
+	ssize_t i, n;
 #ifdef NWFSDEBUG
-	printk(KERN_DEBUG "nwfs_write: filp @%p, buffer @%p, len = %lu, offset @%p\n", filp, buffer, len, offset);
+	printk(KERN_DEBUG "nwfs_write: filp @%p, buffer @%p, len = %lu, offset @%p = %lld\n", filp, buffer, len, offset,
+	       *offset);
+	printk(KERN_DEBUG "nwfs_write: filp->f_pos = %lld\n", filp->f_pos);
 #endif
-	//todo
-	return -1;
+	err = nwfs_api_read(filp->f_inode->i_sb->s_fs_info, filp->f_inode->i_ino, &content);
+	if (err == NWFS_OK) {
+		if (*offset > content.content_length) {
+			return -EFAULT;
+		}
+		n = NWFS_MAX_FILE_LENGTH - *offset;
+		if (len < n) {
+			n = len;
+		}
+		for (i = 0; i < n; ++i) {
+			if (get_user(content.content[*offset + i], buffer + i) != 0) {
+				return -EFAULT;
+			}
+		}
+		if (*offset + n > content.content_length) {
+			content.content_length = *offset + n;
+		}
+		err = nwfs_api_write(filp->f_inode->i_sb->s_fs_info, filp->f_inode->i_ino, &content);
+		if (err == NWFS_OK) {
+			*offset += n;
+			return n;
+		}
+	}
+	return -EFAULT;
 }
 
 int nwfs_link(struct dentry *old_dentry, struct inode *parent_dir, struct dentry *new_dentry)

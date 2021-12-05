@@ -67,9 +67,7 @@ u64 nwfs_connect_to_server(const char *command, int params_count, url_key_value_
 	struct socket sock;
 	struct socket *sock_ptr;
 	struct sockaddr_in s_addr;
-	char *send_buf, *recv_buf;
-	char buff_escape[4];
-	char const *ptr;
+	char *send_buf, *recv_buf, *send_buf_end;
 	int i;
 	int error;
 	int message_len;
@@ -81,9 +79,6 @@ u64 nwfs_connect_to_server(const char *command, int params_count, url_key_value_
 #ifdef NWFSDEBUG
 	printk(KERN_DEBUG "nwfs_connect_to_server: command = %s, token = %s, output_buffer @0x%p, params_count = %d",
 	       command, token, output_buf, params_count);
-	for (i = 0; i < params_count; ++i) {
-		printk(KERN_DEBUG "nwfs_connect_to_server: param %i: %s = %s", i, params[i][0], params[i][1]);
-	}
 #endif
 	send_buf = connect_to_server_send_buf;
 	recv_buf = connect_to_server_recv_buf;
@@ -110,21 +105,22 @@ u64 nwfs_connect_to_server(const char *command, int params_count, url_key_value_
 	strcat(send_buf, token);
 	strcat(send_buf, "/fs/");
 	strcat(send_buf, command);
-	i = 0;
-	while (i < params_count) {
-		strcat(send_buf, i == 0 ? "?" : "&");
-		strcat(send_buf, params[i][0]);
-		ptr = params[i][1];
-		if (params[i][1] != NULL) {
-			strcat(send_buf, "=");
-			while (*ptr != '\0') {
-				sprintf(buff_escape, "%%%02x", *ptr);
-				strcat(send_buf, buff_escape);
-				++ptr;
-			}
-		}
-		i++;
+	send_buf_end = send_buf;
+	while (*send_buf_end != '\0') {
+		++send_buf_end;
 	}
+	for (i = 0; i < params_count; ++i) {
+		if (params[i][0].len == 0) {
+			return NWFS_ERR_BAD_ARGUMENT;
+		}
+		*(send_buf_end++) = (i == 0 ? '?' : '&');
+		send_buf_end = write_to_ptr_with_percent_escaping(send_buf_end, &params[i][0]);
+		if (params[i][1].len != 0) {
+			*(send_buf_end++) = '=';
+			send_buf_end = write_to_ptr_with_percent_escaping(send_buf_end, &params[i][1]);
+		}
+	}
+	*send_buf_end = '\0';
 	strcat(send_buf, " HTTP/1.1\r\nHost: nerc.itmo.ru\r\nConnection: close\r\n\r\n");
 #ifdef NWFSDEBUG
 	printk(KERN_DEBUG "Sending message @0x%p: %s\n", send_buf, send_buf);
@@ -170,4 +166,21 @@ u64 nwfs_connect_to_server(const char *command, int params_count, url_key_value_
 	kernel_sock_shutdown(sock_ptr, SHUT_RDWR);
 	sock_release(sock_ptr);
 	return return_code;
+}
+
+char *write_to_ptr_with_percent_escaping(char *dst, const struct string_slice *src)
+{
+	char const *cp;
+	char c;
+	for (cp = src->start; cp < src->start + src->len; ++cp) {
+		c = *cp;
+		if (('A' <= c && c <= 'Z') || ('a' <= c && c <= 'z') || ('0' <= c && c <= '9') || c == '-' ||
+		    c == '_' || c == '.' || c == '~') {
+			*(dst++) = c;
+		} else {
+			sprintf(dst, "%%%02X", *(unsigned char *)(void *)cp);
+			dst += 3;
+		}
+	}
+	return dst;
 }

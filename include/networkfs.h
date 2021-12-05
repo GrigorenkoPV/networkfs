@@ -6,7 +6,6 @@
 #include <linux/fs.h>
 #include <linux/kernel.h>
 
-typedef struct file_operations operations;
 MODULE_LICENSE("GPL");
 MODULE_AUTHOR("Grigorenko Pavel <311639@niuitmo.ru>");
 MODULE_VERSION("0.01");
